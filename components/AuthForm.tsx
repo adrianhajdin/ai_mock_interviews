@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 
 import { signIn, signUp } from "@/lib/actions/auth.action";
 import FormField from "./FormField";
+import { useState } from "react";
 
 const authFormSchema = (type: FormType) => {
   return z.object({
@@ -30,7 +31,7 @@ const authFormSchema = (type: FormType) => {
 
 const AuthForm = ({ type }: { type: FormType }) => {
   const router = useRouter();
-
+const [isLoading, setisLoading] = useState(false);
   const formSchema = authFormSchema(type);
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -44,6 +45,7 @@ const AuthForm = ({ type }: { type: FormType }) => {
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
     try {
       if (type === "sign-up") {
+        setisLoading(true);
         const { name, email, password } = data;
 
         const userCredential = await createUserWithEmailAndPassword(
@@ -63,10 +65,12 @@ const AuthForm = ({ type }: { type: FormType }) => {
           toast.error(result.message);
           return;
         }
-
+        setisLoading(false)
         toast.success("Account created successfully. Please sign in.");
         router.push("/sign-in");
+        
       } else {
+        setisLoading(true)
         const { email, password } = data;
 
         const userCredential = await signInWithEmailAndPassword(
@@ -85,13 +89,14 @@ const AuthForm = ({ type }: { type: FormType }) => {
           email,
           idToken,
         });
-
+        setisLoading(false)
         toast.success("Signed in successfully.");
         router.push("/");
       }
     } catch (error) {
       console.log(error);
       toast.error(`There was an error: ${error}`);
+      setisLoading(false);
     }
   };
 
@@ -138,8 +143,12 @@ const AuthForm = ({ type }: { type: FormType }) => {
               type="password"
             />
 
-            <Button className="btn" type="submit">
-              {isSignIn ? "Sign In" : "Create an Account"}
+            <Button type="submit" className="btn" disabled={isLoading}>
+              {isSignIn ? (
+                <>{isLoading ? "Signing in..." : "Sign In"}</>
+              ) : (
+                <>{isLoading ? "Creating..." : "Create an Account"}</>
+              )}
             </Button>
           </form>
         </Form>
